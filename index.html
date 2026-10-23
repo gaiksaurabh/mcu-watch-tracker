@@ -1,0 +1,706 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>MCU Watch Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  /* Layout: sticky top bar, hero with stat cards, tabbed views, one accent (signal red). */
+  --bg: #f3f4f7;
+  --panel: #ffffff;
+  --fg: #11131a;
+  --muted: #5d6272;
+  --line: #e2e5ed;
+  --chip: #eceff5;
+  --accent: #e23a32;
+  --accent-ink: #ffffff;
+  --gold: #b97d00;
+  --green: #1d8a57;
+  --shadow: 0 1px 2px rgba(16, 18, 28, 0.06), 0 10px 28px rgba(16, 18, 28, 0.06);
+  --radius: 14px;
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0d12;
+    --panel: #151923;
+    --fg: #f2f3f7;
+    --muted: #9aa1b2;
+    --line: #262c39;
+    --chip: #1c2230;
+    --accent: #ff4d45;
+    --accent-ink: #ffffff;
+    --gold: #f5b82e;
+    --green: #3ddc97;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0d12;
+  --panel: #151923;
+  --fg: #f2f3f7;
+  --muted: #9aa1b2;
+  --line: #262c39;
+  --chip: #1c2230;
+  --accent: #ff4d45;
+  --accent-ink: #ffffff;
+  --gold: #f5b82e;
+  --green: #3ddc97;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* Top bar */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mark {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font-weight: 800; font-size: 18px; flex: none;
+}
+.brand-name { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 14px; }
+.brand-sub { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+  border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger-armed { border-color: var(--accent); color: var(--accent); }
+
+/* Hero */
+.hero { padding: 40px 0 24px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; align-items: end; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.hero h1 {
+  font-size: clamp(34px, 6vw, 64px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin-top: 10px;
+  text-wrap: balance;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p.lede { margin-top: 14px; color: var(--muted); max-width: 52ch; }
+.next-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px;
+}
+.next-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+.next-card .big { font-size: 22px; font-weight: 700; margin-top: 6px; text-wrap: balance; }
+.next-card .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.next-card .btn { margin-top: 14px; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px 18px; min-width: 0;
+}
+.stat .k { font-size: 12px; color: var(--muted); font-weight: 500; }
+.stat .v { font-size: clamp(22px, 3vw, 30px); font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat .f { font-size: 12px; color: var(--muted); }
+.track { height: 6px; background: var(--chip); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.track > span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width 0.35s ease; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px; margin-top: 28px; padding: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  border: 0; background: transparent; color: var(--muted); padding: 8px 16px;
+  border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.view { margin-top: 22px; }
+.view-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.view-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.view-head p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px; min-width: 0;
+}
+.panel h3 { font-size: 15px; font-weight: 600; }
+.panel .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+
+/* Phase bars */
+.phase-row { margin-top: 16px; }
+.phase-row .top { display: flex; justify-content: space-between; font-size: 13px; gap: 8px; }
+.phase-row .top span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.phase-row .track { margin-top: 6px; }
+.phase-row .track > span { background: var(--green); }
+
+/* Lists */
+.mini-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+.mini-list li { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 10px; min-width: 0; }
+.mini-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.mini-list .t { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.mini-list .s { font-size: 12px; color: var(--muted); }
+.stars { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty-note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+
+/* Pills */
+.pill {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--chip); color: var(--muted); white-space: nowrap;
+}
+.pill.green { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.pill.gold { background: color-mix(in srgb, var(--gold) 18%, transparent); color: var(--gold); }
+.pill.red { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.field {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; font-size: 13px; min-width: 0; color-scheme: inherit;
+}
+.field.search { flex: 1 1 240px; }
+.result-count { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+
+/* Table */
+.table-wrap {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; min-width: 760px; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; background: var(--panel); position: sticky; top: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: color-mix(in srgb, var(--fg) 3%, transparent); }
+tr.done .ttl { color: var(--muted); }
+.num { color: var(--muted); font-variant-numeric: tabular-nums; width: 48px; }
+.ttl { font-weight: 600; }
+.sub { font-size: 12px; color: var(--muted); }
+.chk { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
+.field.date-input { padding: 6px 8px; font-size: 12px; }
+.field.rating { padding: 6px 8px; font-size: 12px; }
+.empty { padding: 36px; text-align: center; color: var(--muted); }
+
+/* Timeline */
+.timeline { position: relative; display: grid; gap: 14px; padding-left: 4px; }
+.tl-item { display: grid; grid-template-columns: 110px 22px minmax(0, 1fr); gap: 10px; align-items: start; }
+.tl-year { font-size: 12px; color: var(--muted); padding-top: 14px; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tl-line { position: relative; align-self: stretch; display: flex; justify-content: center; }
+.tl-line::before { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.tl-dot { position: relative; margin-top: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--panel); border: 2px solid var(--muted); }
+.tl-item.done .tl-dot { background: var(--green); border-color: var(--green); }
+.tl-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.tl-card h3 { font-size: 14px; font-weight: 600; text-wrap: balance; overflow-wrap: anywhere; }
+.tl-card p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.tl-item.marker .tl-card { border-style: dashed; background: transparent; }
+.tl-item.marker .tl-card h3 { color: var(--accent); }
+
+/* Universes */
+.uni-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.uni-card {
+  text-align: left; cursor: pointer; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; display: grid; gap: 8px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.uni-card:hover { border-color: var(--muted); transform: translateY(-1px); }
+.uni-card[aria-pressed="true"] { border-color: var(--accent); }
+.uni-card h3 { font-size: 16px; font-weight: 700; }
+.uni-card p { font-size: 12px; color: var(--muted); }
+.uni-card .count { font-size: 12px; font-weight: 600; color: var(--accent); }
+.uni-detail { margin-top: 18px; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 16px);
+  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 500;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 30;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+footer { margin-top: 48px; font-size: 12px; color: var(--muted); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .hero { padding-top: 24px; }
+  .tl-item { grid-template-columns: 1fr; gap: 4px; }
+  .tl-year { text-align: left; padding-top: 0; }
+  .tl-line { display: none; }
+  .tabs { width: 100%; }
+  .tab { flex: 1 1 auto; text-align: center; padding: 8px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">M</div>
+        <div>
+          <div class="brand-name">MCU Watch Tracker</div>
+          <span class="brand-sub">Track every title, in order</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="exportBtn" type="button">Export CSV</button>
+        <button class="btn" id="resetBtn" type="button">Reset progress</button>
+      </div>
+    </div>
+  </header>
+
+<div class="wrap">
+  <section class="hero" aria-labelledby="heroTitle">
+    <div>
+      <div class="eyebrow">Your Marvel watchlist</div>
+      <h1 id="heroTitle">Your journey through <em>the Multiverse.</em></h1>
+      <p class="lede">Track films, series and specials from the 2008 launch to the announced slate. Progress, watch dates and ratings save in this browser.</p>
+    </div>
+    <aside class="next-card" aria-labelledby="nextLabel">
+      <div class="label" id="nextLabel">Up next</div>
+      <div class="big" id="nextTitle">—</div>
+      <div class="meta" id="nextMeta"></div>
+      <button class="btn primary" id="nextBtn" type="button">Open release list</button>
+    </aside>
+  </section>
+
+  <section class="stats" aria-label="Summary">
+    <div class="stat"><div class="k">Titles tracked</div><div class="v" id="sTotal">—</div><div class="f" id="sTotalFoot"></div></div>
+    <div class="stat"><div class="k">Watched</div><div class="v" id="sWatched">—</div><div class="f" id="sWatchedFoot"></div><div class="track"><span id="sFill"></span></div></div>
+    <div class="stat"><div class="k">Completion</div><div class="v" id="sPct">0%</div><div class="f">Of released titles</div></div>
+    <div class="stat"><div class="k">Average rating</div><div class="v" id="sAvg">—</div><div class="f" id="sRated"></div></div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" aria-selected="true" data-view="overview" type="button">Overview</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="release" type="button">Release order</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="chron" type="button">Story timeline</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="universes" type="button">Universes</button>
+  </nav>
+
+  <!-- Overview -->
+  <section class="view" id="view-overview" role="tabpanel">
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Progress by phase</h3>
+        <p class="desc">Watched titles in each phase</p>
+        <div id="phaseBars"></div>
+      </div>
+      <div class="panel">
+        <h3>Your top picks</h3>
+        <p class="desc">Watched titles, highest rating first</p>
+        <ul class="mini-list" id="topList"></ul>
+        <p class="empty-note" id="topEmpty">Rate a watched title to see it here.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h3>Coming soon</h3>
+      <p class="desc">Announced titles without a confirmed release yet</p>
+      <ul class="mini-list" id="soonList"></ul>
+    </div>
+  </section>
+
+  <!-- Release order -->
+  <section class="view" id="view-release" role="tabpanel" hidden>
+    <div class="view-head">
+      <div>
+        <h2>Release order</h2>
+        <p>Titles in the order they came out. Tick, date and rate each one.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <input class="field search" id="search" type="search" placeholder="Search titles or notes" aria-label="Search titles">
+      <select class="field" id="fPhase" aria-label="Filter by phase"><option value="">All phases</option></select>
+      <select class="field" id="fType" aria-label="Filter by type">
+        <option value="">All types</option><option>Film</option><option>Series</option><option>Special</option>
+      </select>
+      <select class="field" id="fWatched" aria-label="Filter by watch status">
+        <option value="">Watched and unwatched</option><option value="yes">Watched</option><option value="no">Unwatched</option>
+      </select>
+      <select class="field" id="fUniverse" aria-label="Filter by universe"><option value="">All universes</option></select>
+    </div>
+    <p class="result-count" id="resultCount"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Title</th><th>Phase</th><th>Release</th><th>Platform</th><th>Status</th><th>Watched</th><th>Watch date</th><th>Rating</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="noRows" hidden>No titles match these filters.</div>
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="view" id="view-chron" role="tabpanel" hidden>
+    <div class="view-head">
+      <div>
+        <h2>Story timeline</h2>
+        <p>In-story order. Some multiverse and street-level dates are approximate.</p>
+      </div>
+      <button class="btn" id="chronExport" type="button">Export timeline CSV</button>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- Universes -->
+  <section class="view" id="view-universes" role="tabpanel" hidden>
+    <div class="view-head">
+      <div>
+        <h2>Universes</h2>
+        <p>Choose a universe to see its titles.</p>
+      </div>
+    </div>
+    <div class="uni-grid" id="uniGrid"></div>
+    <div class="uni-detail">
+      <div class="view-head">
+        <div>
+          <h2 id="uniTitle">Main MCU</h2>
+          <p id="uniSub"></p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Release</th><th>Status</th><th>Watched</th></tr></thead>
+          <tbody id="uniRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="exportBox" style="margin-top:28px" hidden>
+    <div class="view-head" style="margin-bottom:10px">
+      <div>
+        <h3 id="csvLabel">Export</h3>
+        <p class="desc">Copy this text and paste it into a spreadsheet app.</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="copyCsv" type="button">Copy CSV</button>
+        <button class="btn" id="closeCsv" type="button">Close</button>
+      </div>
+    </div>
+    <textarea id="csvBox" class="field" readonly rows="8" style="width:100%;font-size:12px;resize:vertical" aria-label="CSV text"></textarea>
+  </section>
+
+  <footer>
+    Progress is saved in this browser only and is not synced across devices. Fan-made tracker, not affiliated with Marvel Studios.
+    Release dates and canon status can change; check official sources before relying on them.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = {"release": [{"#": 1, "Title": "Iron Man", "Type": "Film", "Phase": "Phase 1", "Release Year": 2008, "Release Date": "2008-05-02", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "126 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2010", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 2, "Title": "The Incredible Hulk", "Type": "Film", "Phase": "Phase 1", "Release Year": 2008, "Release Date": "2008-06-13", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "112 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2010", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 3, "Title": "Iron Man 2", "Type": "Film", "Phase": "Phase 1", "Release Year": 2010, "Release Date": "2010-05-07", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "124 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2010", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 4, "Title": "Thor", "Type": "Film", "Phase": "Phase 1", "Release Year": 2011, "Release Date": "2011-05-06", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "115 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2011", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 5, "Title": "Captain America: The First Avenger", "Type": "Film", "Phase": "Phase 1", "Release Year": 2011, "Release Date": "2011-07-22", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "124 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "1943–1945", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 6, "Title": "The Consultant", "Type": "Special", "Phase": "Phase 1", "Release Year": 2011, "Release Date": "2011-09-13", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "4 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2011", "Notes": "One-Shot", "Universe": "Main MCU", "Status": "Released"}, {"#": 7, "Title": "A Funny Thing Happened on the Way to Thor’s Hammer", "Type": "Special", "Phase": "Phase 1", "Release Year": 2011, "Release Date": "2011-10-25", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "4 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2010", "Notes": "One-Shot", "Universe": "Main MCU", "Status": "Released"}, {"#": 8, "Title": "The Avengers", "Type": "Film", "Phase": "Phase 1", "Release Year": 2012, "Release Date": "2012-05-04", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "143 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2012", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 9, "Title": "Item 47", "Type": "Special", "Phase": "Phase 1", "Release Year": 2012, "Release Date": "2012-09-25", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "12 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2012", "Notes": "One-Shot", "Universe": "Main MCU", "Status": "Released"}, {"#": 10, "Title": "Iron Man 3", "Type": "Film", "Phase": "Phase 2", "Release Year": 2013, "Release Date": "2013-05-03", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "130 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2012", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 11, "Title": "Agent Carter (One-Shot)", "Type": "Special", "Phase": "Phase 2", "Release Year": 2013, "Release Date": "2013-09-24", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "15 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "1946", "Notes": "One-Shot", "Universe": "Main MCU", "Status": "Released"}, {"#": 12, "Title": "Thor: The Dark World", "Type": "Film", "Phase": "Phase 2", "Release Year": 2013, "Release Date": "2013-11-08", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "112 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2013", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 13, "Title": "All Hail the King", "Type": "Special", "Phase": "Phase 2", "Release Year": 2014, "Release Date": "2014-02-04", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "14 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2013", "Notes": "One-Shot", "Universe": "Main MCU", "Status": "Released"}, {"#": 14, "Title": "Captain America: The Winter Soldier", "Type": "Film", "Phase": "Phase 2", "Release Year": 2014, "Release Date": "2014-04-04", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "136 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2014", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 15, "Title": "Guardians of the Galaxy", "Type": "Film", "Phase": "Phase 2", "Release Year": 2014, "Release Date": "2014-08-01", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "121 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2014", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 16, "Title": "Agent Carter – Season 1", "Type": "Series", "Phase": "Phase 2", "Release Year": 2015, "Release Date": "2015-01-06", "Platform": "ABC / Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "8 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "1946", "Notes": "ABC; not a Netflix street-level show. Included as requested; MCU tie-in status differs from Netflix shows.", "Universe": "Main MCU", "Status": "Released"}, {"#": 17, "Title": "Daredevil – Season 1", "Type": "Series", "Phase": "Phase 2", "Release Year": 2015, "Release Date": "2015-04-10", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2015", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 18, "Title": "Avengers: Age of Ultron", "Type": "Film", "Phase": "Phase 2", "Release Year": 2015, "Release Date": "2015-05-01", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "141 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2015", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 19, "Title": "Ant-Man", "Type": "Film", "Phase": "Phase 2", "Release Year": 2015, "Release Date": "2015-07-17", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "117 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2015", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 20, "Title": "Jessica Jones – Season 1", "Type": "Series", "Phase": "Phase 2", "Release Year": 2015, "Release Date": "2015-11-20", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2015", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 21, "Title": "Agent Carter – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2016, "Release Date": "2016-01-19", "Platform": "ABC / Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "10 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "1947", "Notes": "ABC; not a Netflix street-level show.", "Universe": "Main MCU", "Status": "Released"}, {"#": 22, "Title": "Daredevil – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2016, "Release Date": "2016-03-18", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 23, "Title": "Captain America: Civil War", "Type": "Film", "Phase": "Phase 3", "Release Year": 2016, "Release Date": "2016-05-06", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "147 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 24, "Title": "Luke Cage – Season 1", "Type": "Series", "Phase": "Phase 3", "Release Year": 2016, "Release Date": "2016-09-30", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 25, "Title": "Doctor Strange", "Type": "Film", "Phase": "Phase 3", "Release Year": 2016, "Release Date": "2016-11-04", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "115 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016–2017", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 26, "Title": "Iron Fist – Season 1", "Type": "Series", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-03-17", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2017", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 27, "Title": "Guardians of the Galaxy Vol. 2", "Type": "Film", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-05-05", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "137 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2014", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 28, "Title": "Spider-Man: Homecoming", "Type": "Film", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-07-07", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "133 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": null, "Universe": "Spider-Man", "Status": "Released"}, {"#": 29, "Title": "The Defenders – Season 1", "Type": "Series", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-08-18", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "8 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2017", "Notes": "Netflix crossover", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 30, "Title": "Thor: Ragnarok", "Type": "Film", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-11-03", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "131 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2017", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 31, "Title": "The Punisher – Season 1", "Type": "Series", "Phase": "Phase 3", "Release Year": 2017, "Release Date": "2017-11-17", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2017", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 32, "Title": "Black Panther", "Type": "Film", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-02-16", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "134 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 33, "Title": "Jessica Jones – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-03-08", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 34, "Title": "Avengers: Infinity War", "Type": "Film", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-04-27", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "149 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 35, "Title": "Luke Cage – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-06-22", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 36, "Title": "Ant-Man and the Wasp", "Type": "Film", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-07-06", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "118 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": "Post-credit scene overlaps with the Snap", "Universe": "Main MCU", "Status": "Released"}, {"#": 37, "Title": "Iron Fist – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-09-07", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "10 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 38, "Title": "Daredevil – Season 3", "Type": "Series", "Phase": "Phase 3", "Release Year": 2018, "Release Date": "2018-10-19", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 39, "Title": "The Punisher – Season 2", "Type": "Series", "Phase": "Phase 3", "Release Year": 2019, "Release Date": "2019-01-18", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2019", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 40, "Title": "Captain Marvel", "Type": "Film", "Phase": "Phase 3", "Release Year": 2019, "Release Date": "2019-03-08", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "124 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "1995", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 41, "Title": "Avengers: Endgame", "Type": "Film", "Phase": "Phase 3", "Release Year": 2019, "Release Date": "2019-04-26", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "181 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2018–2023", "Notes": "Includes the five-year Blip gap", "Universe": "Main MCU", "Status": "Released"}, {"#": 42, "Title": "Jessica Jones – Season 3", "Type": "Series", "Phase": "Phase 3", "Release Year": 2019, "Release Date": "2019-06-14", "Platform": "Netflix", "Canon Status": "Non-Canon Netflix", "Runtime or Episode Count": "13 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2019", "Notes": "Netflix street-level series", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 43, "Title": "Spider-Man: Far From Home", "Type": "Film", "Phase": "Phase 3", "Release Year": 2019, "Release Date": "2019-07-02", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "129 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024", "Notes": null, "Universe": "Spider-Man", "Status": "Released"}, {"#": 44, "Title": "WandaVision", "Type": "Series", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-01-15", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2023", "Notes": "Weeks after Endgame", "Universe": "Main MCU", "Status": "Released"}, {"#": 45, "Title": "The Falcon and the Winter Soldier", "Type": "Series", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-03-19", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 46, "Title": "Loki – Season 1", "Type": "Series", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-06-09", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Outside linear time", "Notes": "Branches from 2012; multiverse", "Universe": "Main MCU", "Status": "Released"}, {"#": 47, "Title": "Black Widow", "Type": "Film", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-07-09", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "134 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2016", "Notes": "Main story after Civil War", "Universe": "Main MCU", "Status": "Released"}, {"#": 48, "Title": "What If...? – Season 1", "Type": "Series", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-08-11", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Multiverse", "Notes": "Alternate realities", "Universe": "Main MCU", "Status": "Released"}, {"#": 49, "Title": "Shang-Chi and the Legend of the Ten Rings", "Type": "Film", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-09-03", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "132 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 50, "Title": "Eternals", "Type": "Film", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-11-05", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "157 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2023–2024", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 51, "Title": "Hawkeye", "Type": "Series", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-11-24", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Christmas 2024", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 52, "Title": "Spider-Man: No Way Home", "Type": "Film", "Phase": "Phase 4", "Release Year": 2021, "Release Date": "2021-12-17", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "148 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024", "Notes": null, "Universe": "Spider-Man", "Status": "Released"}, {"#": 53, "Title": "Moon Knight", "Type": "Series", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-03-30", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Around 2025", "Notes": "Exact placement not firmly specified", "Universe": "Main MCU", "Status": "Released"}, {"#": 54, "Title": "Doctor Strange in the Multiverse of Madness", "Type": "Film", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-05-06", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "126 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024–2025", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 55, "Title": "Ms. Marvel", "Type": "Series", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-06-08", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2025", "Notes": "Leads into The Marvels", "Universe": "Main MCU", "Status": "Released"}, {"#": 56, "Title": "Thor: Love and Thunder", "Type": "Film", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-07-08", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "119 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2025", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 57, "Title": "I Am Groot – Season 1", "Type": "Series", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-08-10", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "5 shorts", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "After Guardians Vol. 2", "Notes": "Animated shorts", "Universe": "Main MCU", "Status": "Released"}, {"#": 58, "Title": "She-Hulk: Attorney at Law", "Type": "Series", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-08-18", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Around 2025", "Notes": "Placement debated", "Universe": "Main MCU", "Status": "Released"}, {"#": 59, "Title": "Werewolf by Night", "Type": "Special", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-10-07", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "53 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Unspecified / modern", "Notes": "Standalone special", "Universe": "Main MCU", "Status": "Released"}, {"#": 60, "Title": "Black Panther: Wakanda Forever", "Type": "Film", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-11-11", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "161 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2024–2025", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 61, "Title": "The Guardians of the Galaxy Holiday Special", "Type": "Special", "Phase": "Phase 4", "Release Year": 2022, "Release Date": "2022-11-25", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "44 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "After Love and Thunder", "Notes": "Before Guardians Vol. 3", "Universe": "Main MCU", "Status": "Released"}, {"#": 62, "Title": "Ant-Man and the Wasp: Quantumania", "Type": "Film", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-02-17", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "125 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2026", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 63, "Title": "Guardians of the Galaxy Vol. 3", "Type": "Film", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-05-05", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "150 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2026", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 64, "Title": "Secret Invasion", "Type": "Series", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-06-21", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2026", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 65, "Title": "I Am Groot – Season 2", "Type": "Series", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-09-06", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "5 shorts", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "After Guardians Vol. 2", "Notes": "Animated shorts", "Universe": "Main MCU", "Status": "Released"}, {"#": 66, "Title": "Loki – Season 2", "Type": "Series", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-10-05", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Outside linear time", "Notes": "Multiverse timeline", "Universe": "Main MCU", "Status": "Released"}, {"#": 67, "Title": "The Marvels", "Type": "Film", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-11-10", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "105 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2026", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 68, "Title": "What If...? – Season 2", "Type": "Series", "Phase": "Phase 5", "Release Year": 2023, "Release Date": "2023-12-22", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Multiverse", "Notes": "Alternate realities", "Universe": "Main MCU", "Status": "Released"}, {"#": 69, "Title": "Echo", "Type": "Series", "Phase": "Phase 5", "Release Year": 2024, "Release Date": "2024-01-09", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "5 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2025", "Notes": "After Hawkeye", "Universe": "Main MCU", "Status": "Released"}, {"#": 70, "Title": "X-Men '97 – Season 1", "Type": "Series", "Phase": "Phase 5", "Release Year": 2024, "Release Date": "2024-03-20", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "10 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Alternate animated universe", "Notes": "Mutant universe; not main MCU continuity", "Universe": "X-Men / Mutants", "Status": "Released"}, {"#": 71, "Title": "Deadpool & Wolverine", "Type": "Film", "Phase": "Phase 5", "Release Year": 2024, "Release Date": "2024-07-26", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "128 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Multiverse / TVA", "Notes": "Fox X-Men characters and TVA", "Universe": "Main MCU", "Status": "Released"}, {"#": 72, "Title": "Agatha All Along", "Type": "Series", "Phase": "Phase 5", "Release Year": 2024, "Release Date": "2024-09-18", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2026", "Notes": "After WandaVision", "Universe": "Main MCU", "Status": "Released"}, {"#": 73, "Title": "What If...? – Season 3", "Type": "Series", "Phase": "Phase 5", "Release Year": 2024, "Release Date": "2024-12-22", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "8 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Multiverse", "Notes": "Alternate realities", "Universe": "Main MCU", "Status": "Released"}, {"#": 74, "Title": "Your Friendly Neighborhood Spider-Man – Season 1", "Type": "Series", "Phase": "Phase 5", "Release Year": 2025, "Release Date": "2025-01-29", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "10 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Alternate Spider-Man continuity", "Notes": "Not main MCU Peter Parker", "Universe": "Spider-Man", "Status": "Released"}, {"#": 75, "Title": "Captain America: Brave New World", "Type": "Film", "Phase": "Phase 5", "Release Year": 2025, "Release Date": "2025-02-14", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "119 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2027", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 76, "Title": "Daredevil: Born Again – Season 1", "Type": "Series", "Phase": "Phase 5", "Release Year": 2025, "Release Date": "2025-03-04", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "9 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2020s", "Notes": "Street-level; canon status distinct from Netflix original", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 77, "Title": "Thunderbolts*", "Type": "Film", "Phase": "Phase 5", "Release Year": 2025, "Release Date": "2025-05-02", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "127 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2027", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 78, "Title": "Ironheart", "Type": "Series", "Phase": "Phase 5", "Release Year": 2025, "Release Date": "2025-06-24", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "6 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "After Wakanda Forever", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 79, "Title": "The Fantastic Four: First Steps", "Type": "Film", "Phase": "Phase 6", "Release Year": 2025, "Release Date": "2025-07-25", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "115 min", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Alternate 1960s", "Notes": "Separate universe", "Universe": "Fantastic Four", "Status": "Released"}, {"#": 80, "Title": "Eyes of Wakanda", "Type": "Series", "Phase": "Phase 6", "Release Year": 2025, "Release Date": "2025-08-01", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "4 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Across history; earliest c. 1260 BCE", "Notes": "Anthology across Wakandan history", "Universe": "Main MCU", "Status": "Released"}, {"#": 81, "Title": "Marvel Zombies – Season 1", "Type": "Series", "Phase": "Phase 6", "Release Year": 2025, "Release Date": "2025-09-24", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "4 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Alternate universe", "Notes": "What If...? spin-off", "Universe": "Main MCU", "Status": "Released"}, {"#": 82, "Title": "Wonder Man", "Type": "Series", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-01-27", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "8 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Modern MCU", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 83, "Title": "Daredevil: Born Again – Season 2", "Type": "Series", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-03-24", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "8 episodes", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2020s", "Notes": null, "Universe": "Main MCU", "Status": "Released"}, {"#": 84, "Title": "The Punisher: One Last Kill", "Type": "Special", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-05-12", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2020s", "Notes": "Special presentation", "Universe": "Netflix Street-Level", "Status": "Released"}, {"#": 85, "Title": "Spider-Man: Brand New Day", "Type": "Film", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-07-31", "Platform": "Theatre", "Canon Status": "MCU Canon", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Around 2028", "Notes": "After No Way Home; exact MCU calendar placement is approximate", "Universe": "Spider-Man", "Status": "Released"}, {"#": 86, "Title": "VisionQuest", "Type": "Series", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-10-14", "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "After WandaVision / Agatha All Along", "Notes": "Premiere date announced Oct 14, 2026", "Universe": "Main MCU", "Status": "Released"}, {"#": 87, "Title": "Avengers: Doomsday", "Type": "Film", "Phase": "Phase 6", "Release Year": 2026, "Release Date": "2026-12-18", "Platform": "Theatre", "Canon Status": "Upcoming", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "TBA", "Notes": "Announced release date; upcoming", "Universe": "Main MCU", "Status": "Upcoming"}, {"#": 88, "Title": "Avengers: Secret Wars", "Type": "Film", "Phase": "Phase 6", "Release Year": 2027, "Release Date": "2027-12-17", "Platform": "Theatre", "Canon Status": "Upcoming", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "TBA", "Notes": "Announced release date; upcoming", "Universe": "Main MCU", "Status": "Upcoming"}, {"#": 89, "Title": "Daredevil: Born Again – Season 3", "Type": "Series", "Phase": "Phase 6", "Release Year": 2027, "Release Date": null, "Platform": "Disney+", "Canon Status": "MCU Canon", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "2020s", "Notes": "Announced; exact date unconfirmed", "Universe": "Netflix Street-Level", "Status": "Upcoming"}, {"#": 90, "Title": "Your Friendly Neighborhood Spider-Man – Season 2", "Type": "Series", "Phase": "Phase 6", "Release Year": 2026, "Release Date": null, "Platform": "Disney+", "Canon Status": "Upcoming", "Runtime or Episode Count": "TBA", "Watched": "No", "Watch Date": null, "Rating (1-10)": null, "Story Year": "Alternate Spider-Man continuity", "Notes": "Announced; exact date unconfirmed", "Universe": "Spider-Man", "Status": "Upcoming"}], "chronological": [{"#": 1, "Title": "Eyes of Wakanda", "Approximate In-Story Year": "Across history; earliest c. 1260 BCE", "Notes": "Anthology across Wakandan history"}, {"#": 2, "Title": "Captain America: The First Avenger", "Approximate In-Story Year": "1943–1945", "Notes": null}, {"#": 3, "Title": "Agent Carter – Season 1", "Approximate In-Story Year": "1946", "Notes": "ABC; not a Netflix street-level show. Included as requested; MCU tie-in status differs from Netflix shows."}, {"#": 4, "Title": "Agent Carter (One-Shot)", "Approximate In-Story Year": "1946", "Notes": "One-Shot"}, {"#": 5, "Title": "Agent Carter – Season 2", "Approximate In-Story Year": "1947", "Notes": "ABC; not a Netflix street-level show."}, {"#": 6, "Title": "Captain Marvel", "Approximate In-Story Year": "1995", "Notes": null}, {"#": 7, "Title": "Iron Man", "Approximate In-Story Year": "2010", "Notes": null}, {"#": 8, "Title": "Iron Man 2", "Approximate In-Story Year": "2010", "Notes": null}, {"#": 9, "Title": "The Incredible Hulk", "Approximate In-Story Year": "2010", "Notes": null}, {"#": 10, "Title": "A Funny Thing Happened on the Way to Thor’s Hammer", "Approximate In-Story Year": "2010", "Notes": "One-Shot"}, {"#": 11, "Title": "Thor", "Approximate In-Story Year": "2011", "Notes": null}, {"#": 12, "Title": "The Consultant", "Approximate In-Story Year": "2011", "Notes": "One-Shot"}, {"#": 13, "Title": "The Avengers", "Approximate In-Story Year": "2012", "Notes": null}, {"#": 14, "Title": "Item 47", "Approximate In-Story Year": "2012", "Notes": "One-Shot"}, {"#": 15, "Title": "Thor: The Dark World", "Approximate In-Story Year": "2013", "Notes": null}, {"#": 16, "Title": "Iron Man 3", "Approximate In-Story Year": "2012", "Notes": null}, {"#": 17, "Title": "All Hail the King", "Approximate In-Story Year": "2013", "Notes": "One-Shot"}, {"#": 18, "Title": "Captain America: The Winter Soldier", "Approximate In-Story Year": "2014", "Notes": null}, {"#": 19, "Title": "Guardians of the Galaxy", "Approximate In-Story Year": "2014", "Notes": null}, {"#": 20, "Title": "Guardians of the Galaxy Vol. 2", "Approximate In-Story Year": "2014", "Notes": null}, {"#": 21, "Title": "I Am Groot – Season 1", "Approximate In-Story Year": "After Guardians Vol. 2", "Notes": "Animated shorts"}, {"#": 22, "Title": "I Am Groot – Season 2", "Approximate In-Story Year": "After Guardians Vol. 2", "Notes": "Animated shorts"}, {"#": 23, "Title": "Daredevil – Season 1", "Approximate In-Story Year": "2015", "Notes": "Netflix street-level series"}, {"#": 24, "Title": "Jessica Jones – Season 1", "Approximate In-Story Year": "2015", "Notes": "Netflix street-level series"}, {"#": 25, "Title": "Avengers: Age of Ultron", "Approximate In-Story Year": "2015", "Notes": null}, {"#": 26, "Title": "Ant-Man", "Approximate In-Story Year": "2015", "Notes": null}, {"#": 27, "Title": "Daredevil – Season 2", "Approximate In-Story Year": "2016", "Notes": "Netflix street-level series"}, {"#": 28, "Title": "Luke Cage – Season 1", "Approximate In-Story Year": "2016", "Notes": "Netflix street-level series"}, {"#": 29, "Title": "Iron Fist – Season 1", "Approximate In-Story Year": "2017", "Notes": "Netflix street-level series"}, {"#": 30, "Title": "The Defenders – Season 1", "Approximate In-Story Year": "2017", "Notes": "Netflix crossover"}, {"#": 31, "Title": "Captain America: Civil War", "Approximate In-Story Year": "2016", "Notes": null}, {"#": 32, "Title": "Black Widow", "Approximate In-Story Year": "2016", "Notes": "Main story after Civil War"}, {"#": 33, "Title": "Black Panther", "Approximate In-Story Year": "2016", "Notes": null}, {"#": 34, "Title": "Spider-Man: Homecoming", "Approximate In-Story Year": "2016", "Notes": null}, {"#": 35, "Title": "The Punisher – Season 1", "Approximate In-Story Year": "2017", "Notes": "Netflix street-level series"}, {"#": 36, "Title": "Doctor Strange", "Approximate In-Story Year": "2016–2017", "Notes": null}, {"#": 37, "Title": "Jessica Jones – Season 2", "Approximate In-Story Year": "2018", "Notes": "Netflix street-level series"}, {"#": 38, "Title": "Luke Cage – Season 2", "Approximate In-Story Year": "2018", "Notes": "Netflix street-level series"}, {"#": 39, "Title": "Iron Fist – Season 2", "Approximate In-Story Year": "2018", "Notes": "Netflix street-level series"}, {"#": 40, "Title": "Daredevil – Season 3", "Approximate In-Story Year": "2018", "Notes": "Netflix street-level series"}, {"#": 41, "Title": "Thor: Ragnarok", "Approximate In-Story Year": "2017", "Notes": null}, {"#": 42, "Title": "The Punisher – Season 2", "Approximate In-Story Year": "2019", "Notes": "Netflix street-level series"}, {"#": 43, "Title": "Jessica Jones – Season 3", "Approximate In-Story Year": "2019", "Notes": "Netflix street-level series"}, {"#": 44, "Title": "Ant-Man and the Wasp", "Approximate In-Story Year": "2018", "Notes": "Post-credit scene overlaps with the Snap"}, {"#": 45, "Title": "Avengers: Infinity War", "Approximate In-Story Year": "2018", "Notes": null}, {"#": 46, "Title": "BLIP GAP (2018–2023) — five-year time jump", "Approximate In-Story Year": "2018–2023", "Notes": "Timeline marker — not a title. Endgame's five-year jump is the major gap."}, {"#": 47, "Title": "Avengers: Endgame", "Approximate In-Story Year": "2018–2023", "Notes": "Includes the five-year Blip gap"}, {"#": 48, "Title": "Loki – Season 1", "Approximate In-Story Year": "Outside linear time", "Notes": "Branches from 2012; multiverse"}, {"#": 49, "Title": "What If...? – Season 1", "Approximate In-Story Year": "Multiverse", "Notes": "Alternate realities"}, {"#": 50, "Title": "WandaVision", "Approximate In-Story Year": "2023", "Notes": "Weeks after Endgame"}, {"#": 51, "Title": "The Falcon and the Winter Soldier", "Approximate In-Story Year": "2024", "Notes": null}, {"#": 52, "Title": "Shang-Chi and the Legend of the Ten Rings", "Approximate In-Story Year": "2024", "Notes": null}, {"#": 53, "Title": "Spider-Man: Far From Home", "Approximate In-Story Year": "2024", "Notes": null}, {"#": 54, "Title": "Eternals", "Approximate In-Story Year": "2023–2024", "Notes": null}, {"#": 55, "Title": "Spider-Man: No Way Home", "Approximate In-Story Year": "2024", "Notes": null}, {"#": 56, "Title": "Doctor Strange in the Multiverse of Madness", "Approximate In-Story Year": "2024–2025", "Notes": null}, {"#": 57, "Title": "Hawkeye", "Approximate In-Story Year": "Christmas 2024", "Notes": null}, {"#": 58, "Title": "Moon Knight", "Approximate In-Story Year": "Around 2025", "Notes": "Exact placement not firmly specified"}, {"#": 59, "Title": "Black Panther: Wakanda Forever", "Approximate In-Story Year": "2024–2025", "Notes": null}, {"#": 60, "Title": "Echo", "Approximate In-Story Year": "2025", "Notes": "After Hawkeye"}, {"#": 61, "Title": "She-Hulk: Attorney at Law", "Approximate In-Story Year": "Around 2025", "Notes": "Placement debated"}, {"#": 62, "Title": "Ms. Marvel", "Approximate In-Story Year": "2025", "Notes": "Leads into The Marvels"}, {"#": 63, "Title": "Thor: Love and Thunder", "Approximate In-Story Year": "2025", "Notes": null}, {"#": 64, "Title": "Werewolf by Night", "Approximate In-Story Year": "Unspecified / modern", "Notes": "Standalone special"}, {"#": 65, "Title": "The Guardians of the Galaxy Holiday Special", "Approximate In-Story Year": "After Love and Thunder", "Notes": "Before Guardians Vol. 3"}, {"#": 66, "Title": "Ant-Man and the Wasp: Quantumania", "Approximate In-Story Year": "2026", "Notes": null}, {"#": 67, "Title": "Guardians of the Galaxy Vol. 3", "Approximate In-Story Year": "2026", "Notes": null}, {"#": 68, "Title": "Secret Invasion", "Approximate In-Story Year": "2026", "Notes": null}, {"#": 69, "Title": "The Marvels", "Approximate In-Story Year": "2026", "Notes": null}, {"#": 70, "Title": "Agatha All Along", "Approximate In-Story Year": "2026", "Notes": "After WandaVision"}, {"#": 71, "Title": "VisionQuest", "Approximate In-Story Year": "After WandaVision / Agatha All Along", "Notes": "Premiere date announced Oct 14, 2026"}, {"#": 72, "Title": "MULTIVERSE SHIFT — branching timelines / alternate universes", "Approximate In-Story Year": "Non-linear / multiple universes", "Notes": "Timeline marker — events branch outside one linear MCU chronology; do not force a single year."}, {"#": 73, "Title": "Loki – Season 2", "Approximate In-Story Year": "Outside linear time", "Notes": "Multiverse timeline"}, {"#": 74, "Title": "What If...? – Season 2", "Approximate In-Story Year": "Multiverse", "Notes": "Alternate realities"}, {"#": 75, "Title": "What If...? – Season 3", "Approximate In-Story Year": "Multiverse", "Notes": "Alternate realities"}, {"#": 76, "Title": "X-Men '97 – Season 1", "Approximate In-Story Year": "Alternate animated universe", "Notes": "Mutant universe; not main MCU continuity"}, {"#": 77, "Title": "Marvel Zombies – Season 1", "Approximate In-Story Year": "Alternate universe", "Notes": "What If...? spin-off"}, {"#": 78, "Title": "Deadpool & Wolverine", "Approximate In-Story Year": "Multiverse / TVA", "Notes": "Fox X-Men characters and TVA"}, {"#": 79, "Title": "The Fantastic Four: First Steps", "Approximate In-Story Year": "Alternate 1960s", "Notes": "Separate universe"}, {"#": 80, "Title": "Your Friendly Neighborhood Spider-Man – Season 1", "Approximate In-Story Year": "Alternate Spider-Man continuity", "Notes": "Not main MCU Peter Parker"}, {"#": 81, "Title": "Your Friendly Neighborhood Spider-Man – Season 2", "Approximate In-Story Year": "Alternate Spider-Man continuity", "Notes": "Announced; exact date unconfirmed"}, {"#": 82, "Title": "Spider-Man: Brand New Day", "Approximate In-Story Year": "Around 2028", "Notes": "After No Way Home; exact MCU calendar placement is approximate"}, {"#": 83, "Title": "Avengers: Doomsday", "Approximate In-Story Year": "TBA", "Notes": "Announced release date; upcoming"}, {"#": 84, "Title": "Avengers: Secret Wars", "Approximate In-Story Year": "TBA", "Notes": "Announced release date; upcoming"}, {"#": 85, "Title": "Daredevil: Born Again – Season 1", "Approximate In-Story Year": "2020s", "Notes": "Street-level; canon status distinct from Netflix original"}, {"#": 86, "Title": "Daredevil: Born Again – Season 2", "Approximate In-Story Year": "2020s", "Notes": null}, {"#": 87, "Title": "Daredevil: Born Again – Season 3", "Approximate In-Story Year": "2020s", "Notes": "Announced; exact date unconfirmed"}, {"#": 88, "Title": "The Punisher: One Last Kill", "Approximate In-Story Year": "2020s", "Notes": "Special presentation"}, {"#": 89, "Title": "Captain America: Brave New World", "Approximate In-Story Year": "2027", "Notes": "Placement approximate / not firmly specified in official timeline."}, {"#": 90, "Title": "Thunderbolts*", "Approximate In-Story Year": "2027", "Notes": "Placement approximate / not firmly specified in official timeline."}, {"#": 91, "Title": "Ironheart", "Approximate In-Story Year": "After Wakanda Forever", "Notes": "Placement approximate / not firmly specified in official timeline."}, {"#": 92, "Title": "Wonder Man", "Approximate In-Story Year": "Modern MCU", "Notes": "Placement approximate / not firmly specified in official timeline."}]};
+const KEY = "mcu-watch-tracker-v2";
+const UNI_INFO = {
+  "Main MCU": "Films and Disney+ series in the core continuity, from Iron Man to Avengers: Doomsday.",
+  "Spider-Man": "Peter Parker's MCU films and the Your Friendly Neighborhood Spider-Man series.",
+  "X-Men / Mutants": "Mutant-linked titles such as Deadpool & Wolverine and the X-Men '97 series.",
+  "Netflix Street-Level": "Netflix-era Daredevil, Jessica Jones, Luke Cage, Iron Fist and The Punisher, plus the Born Again reboot.",
+  "Fantastic Four": "The 1960s-set First Steps, a separate continuity."
+};
+const UNI_ORDER = Object.keys(UNI_INFO);
+
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { progress = {}; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(progress)); } catch (e) {} }
+function st(title) { return Object.assign({ watched: false, date: "", rating: "" }, progress[title] || {}); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function $(id) { return document.getElementById(id); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function fmtDate(d) {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return "TBA";
+  const x = new Date(d + "T12:00:00");
+  return isNaN(x) ? d : x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+function statusOf(r) {
+  if (r.Status === "Upcoming") return "Upcoming";
+  if (r["Canon Status"] === "Non-Canon Netflix") return "Non-canon";
+  return "Released";
+}
+function statusClass(s) { return s === "Upcoming" ? "gold" : s === "Non-canon" ? "red" : "green"; }
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function setP(title, field, value) {
+  const p = st(title);
+  p[field] = value;
+  if (field === "watched") {
+    if (value && !p.date) p.date = todayISO();
+    if (!value) p.date = "";
+  }
+  progress[title] = p;
+  save();
+  renderAll();
+  if (field === "watched") toast(value ? "Marked as watched" : "Marked as unwatched");
+  else toast("Saved");
+}
+
+// Delegated handler for every input in the tables.
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (!el.dataset || !el.dataset.title) return;
+  if (el.dataset.field === "watched") setP(el.dataset.title, "watched", el.checked);
+  else if (el.dataset.field === "rating") setP(el.dataset.title, "rating", el.value ? Number(el.value) : "");
+  else if (el.dataset.field === "date") setP(el.dataset.title, "date", el.value);
+});
+
+function released() { return DATA.release.filter(r => r.Status !== "Upcoming"); }
+
+function renderStats() {
+  const all = DATA.release;
+  const rel = released();
+  const watchedAll = all.filter(r => st(r.Title).watched).length;
+  const watchedRel = rel.filter(r => st(r.Title).watched).length;
+  const pct = rel.length ? (watchedRel / rel.length) * 100 : 0;
+  const ratings = all.map(r => st(r.Title)).filter(p => p.watched && Number(p.rating) >= 1).map(p => Number(p.rating));
+  $("sTotal").textContent = all.length;
+  $("sTotalFoot").textContent = `${rel.length} released, ${all.length - rel.length} upcoming`;
+  $("sWatched").textContent = watchedAll;
+  $("sWatchedFoot").textContent = `${all.length - watchedAll} still to watch`;
+  $("sFill").style.width = (all.length ? (watchedAll / all.length) * 100 : 0) + "%";
+  $("sPct").textContent = pct.toFixed(1) + "%";
+  $("sAvg").textContent = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : "—";
+  $("sRated").textContent = ratings.length ? `${ratings.length} rated` : "No ratings yet";
+
+  const next = rel.find(r => !st(r.Title).watched);
+  $("nextTitle").textContent = next ? next.Title : "Everything released is watched";
+  $("nextMeta").textContent = next ? `${next.Type} · ${next.Phase} · ${fmtDate(next["Release Date"])}` : "Nice work. Check the coming soon list.";
+}
+
+function renderOverview() {
+  const phases = [...new Set(DATA.release.map(r => r.Phase).filter(Boolean))];
+  $("phaseBars").innerHTML = phases.map(ph => {
+    const items = DATA.release.filter(r => r.Phase === ph && r.Status !== "Upcoming");
+    const done = items.filter(r => st(r.Title).watched).length;
+    const pct = items.length ? (done / items.length) * 100 : 0;
+    return `<div class="phase-row">
+      <div class="top"><span>${esc(ph)}</span><span>${done} / ${items.length}</span></div>
+      <div class="track"><span style="width:${pct}%"></span></div>
+    </div>`;
+  }).join("") || '<p class="empty-note">No phases yet.</p>';
+
+  const rated = DATA.release
+    .map(r => ({ r, p: st(r.Title) }))
+    .filter(x => x.p.watched && Number(x.p.rating) >= 1)
+    .sort((a, b) => Number(b.p.rating) - Number(a.p.rating))
+    .slice(0, 6);
+  $("topList").innerHTML = rated.map(x => `<li><div style="min-width:0"><div class="t">${esc(x.r.Title)}</div><div class="s">${esc(x.r.Type)} · ${esc(x.r.Phase)}</div></div><span class="stars">${x.p.rating} / 10</span></li>`).join("");
+  $("topEmpty").hidden = rated.length > 0;
+
+  const soon = DATA.release.filter(r => r.Status === "Upcoming");
+  $("soonList").innerHTML = soon.map(r => `<li><div style="min-width:0"><div class="t">${esc(r.Title)}</div><div class="s">${esc(r.Type)} · ${esc(r.Phase)}</div></div><span class="pill gold">${esc(fmtDate(r["Release Date"]))}</span></li>`).join("") || '<li class="s">Nothing announced.</li>';
+}
+
+function fillFilters() {
+  const phases = [...new Set(DATA.release.map(r => r.Phase).filter(Boolean))];
+  const unis = UNI_ORDER.filter(u => DATA.release.some(r => (r.Universe || "Main MCU") === u));
+  $("fPhase").innerHTML = '<option value="">All phases</option>' + phases.map(p => `<option>${esc(p)}</option>`).join("");
+  $("fUniverse").innerHTML = '<option value="">All universes</option>' + unis.map(u => `<option>${esc(u)}</option>`).join("");
+}
+
+function filteredRelease() {
+  const q = $("search").value.trim().toLowerCase();
+  const phase = $("fPhase").value, type = $("fType").value, w = $("fWatched").value, uni = $("fUniverse").value;
+  return DATA.release.filter(r => {
+    const p = st(r.Title);
+    const hay = [r.Title, r.Notes, r.Platform, r.Universe, r.Phase].join(" ").toLowerCase();
+    if (q && !hay.includes(q)) return false;
+    if (phase && r.Phase !== phase) return false;
+    if (type && r.Type !== type) return false;
+    if (w === "yes" && !p.watched) return false;
+    if (w === "no" && p.watched) return false;
+    if (uni && (r.Universe || "Main MCU") !== uni) return false;
+    return true;
+  });
+}
+
+function rowHtml(r) {
+  const p = st(r.Title);
+  const s = statusOf(r);
+  const opts = Array.from({ length: 10 }, (_, i) => i + 1)
+    .map(n => `<option value="${n}" ${Number(p.rating) === n ? "selected" : ""}>${n} / 10</option>`).join("");
+  return `<tr class="${p.watched ? "done" : ""}">
+    <td class="num">${esc(r["#"])}</td>
+    <td><div class="ttl">${esc(r.Title)}</div><div class="sub">${esc(r.Type)} · ${esc(r["Runtime or Episode Count"] || "Runtime TBA")} · ${esc(r["Story Year"] || "Story year TBA")}</div></td>
+    <td>${esc(r.Phase || "—")}</td>
+    <td>${fmtDate(r["Release Date"])}</td>
+    <td>${esc(r.Platform || "—")}</td>
+    <td><span class="pill ${statusClass(s)}">${esc(s)}</span></td>
+    <td><input class="chk" type="checkbox" aria-label="Watched: ${esc(r.Title)}" data-title="${esc(r.Title)}" data-field="watched" ${p.watched ? "checked" : ""}></td>
+    <td><input class="field date-input" type="date" aria-label="Watch date: ${esc(r.Title)}" data-title="${esc(r.Title)}" data-field="date" value="${esc(p.date)}"></td>
+    <td><select class="field rating" aria-label="Rating: ${esc(r.Title)}" data-title="${esc(r.Title)}" data-field="rating"><option value="">Not rated</option>${opts}</select></td>
+  </tr>`;
+}
+
+function renderRelease() {
+  const list = filteredRelease();
+  $("rows").innerHTML = list.map(rowHtml).join("");
+  $("noRows").hidden = list.length > 0;
+  $("resultCount").textContent = `Showing ${list.length} of ${DATA.release.length} titles`;
+}
+
+function renderTimeline() {
+  $("timeline").innerHTML = DATA.chronological.map(c => {
+    const t = c.Title || "";
+    const marker = t.startsWith("BLIP GAP") || t.startsWith("MULTIVERSE SHIFT");
+    const rel = DATA.release.find(r => r.Title === t);
+    const done = rel && st(t).watched;
+    return `<div class="tl-item ${marker ? "marker" : ""} ${done ? "done" : ""}">
+      <div class="tl-year">${esc(c["Approximate In-Story Year"] || "Approx.")}</div>
+      <div class="tl-line"><span class="tl-dot"></span></div>
+      <div class="tl-card"><h3>${esc(t)}</h3><p>${esc(c.Notes || (rel ? rel.Type : "Story placement is approximate."))}${done ? " · Watched" : ""}</p></div>
+    </div>`;
+  }).join("");
+}
+
+let activeUni = "Main MCU";
+function renderUniverses() {
+  $("uniGrid").innerHTML = UNI_ORDER.map(u => {
+    const n = DATA.release.filter(r => (r.Universe || "Main MCU") === u).length;
+    return `<button class="uni-card" type="button" data-uni="${esc(u)}" aria-pressed="${u === activeUni}">
+      <h3>${esc(u)}</h3><p>${esc(UNI_INFO[u])}</p><span class="count">${n} titles</span>
+    </button>`;
+  }).join("");
+  $("uniTitle").textContent = activeUni;
+  $("uniSub").textContent = UNI_INFO[activeUni] || "";
+  const list = DATA.release.filter(r => (r.Universe || "Main MCU") === activeUni);
+  $("uniRows").innerHTML = list.map(r => {
+    const p = st(r.Title);
+    const s = statusOf(r);
+    return `<tr class="${p.watched ? "done" : ""}"><td><div class="ttl">${esc(r.Title)}</div><div class="sub">${esc(r.Type)} · ${esc(r.Phase)}</div></td>
+      <td>${fmtDate(r["Release Date"])}</td>
+      <td><span class="pill ${statusClass(s)}">${esc(s)}</span></td>
+      <td>${p.watched ? '<span class="pill green">Watched</span>' : '<span class="pill">Not yet</span>'}</td></tr>`;
+  }).join("") || '<tr><td colspan="4" class="empty">No titles in this universe.</td></tr>';
+}
+
+function renderAll() {
+  renderStats();
+  renderOverview();
+  renderRelease();
+  renderTimeline();
+  renderUniverses();
+}
+
+function showView(name) {
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.view === name));
+  ["overview", "release", "chron", "universes"].forEach(v => { $("view-" + v).hidden = v !== name; });
+}
+document.querySelector(".tabs").addEventListener("click", e => {
+  const b = e.target.closest(".tab");
+  if (b) showView(b.dataset.view);
+});
+$("nextBtn").addEventListener("click", () => { showView("release"); $("search").focus(); });
+$("uniGrid").addEventListener("click", e => {
+  const b = e.target.closest(".uni-card");
+  if (!b) return;
+  activeUni = b.dataset.uni;
+  renderUniverses();
+});
+["search", "fPhase", "fType", "fWatched", "fUniverse"].forEach(id => $(id).addEventListener("input", renderRelease));
+["fPhase", "fType", "fWatched", "fUniverse"].forEach(id => $(id).addEventListener("change", renderRelease));
+
+// Viewers cannot download files from a page, so the CSV is shown as text to copy.
+function showCsv(rows, label) {
+  if (!rows.length) { toast("Nothing to export"); return; }
+  const headers = [...new Set(rows.flatMap(r => Object.keys(r)))];
+  const csv = [headers.join(","), ...rows.map(r => headers.map(h => '"' + String(r[h] ?? "").replace(/"/g, '""') + '"').join(","))].join("\n");
+  $("csvLabel").textContent = label;
+  $("csvBox").value = csv;
+  $("exportBox").hidden = false;
+  $("exportBox").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("csvBox").focus();
+  $("csvBox").select();
+}
+$("exportBtn").addEventListener("click", () => {
+  showCsv(DATA.release.map(r => {
+    const p = st(r.Title);
+    return Object.assign({}, r, { Watched: p.watched ? "Yes" : "No", "Watch Date": p.date, "Rating (1-10)": p.rating });
+  }), "Release order with your progress");
+});
+$("chronExport").addEventListener("click", () => showCsv(DATA.chronological, "Story timeline"));
+$("copyCsv").addEventListener("click", async () => {
+  const box = $("csvBox");
+  box.select();
+  try {
+    await navigator.clipboard.writeText(box.value);
+    toast("CSV copied");
+  } catch (e) {
+    toast("Select the text and copy it");
+  }
+});
+$("closeCsv").addEventListener("click", () => { $("exportBox").hidden = true; });
+
+// Reset needs a second click, because confirm() dialogs do not show in the viewer.
+let resetArmed = false, resetTimer;
+$("resetBtn").addEventListener("click", () => {
+  const b = $("resetBtn");
+  if (!resetArmed) {
+    resetArmed = true;
+    b.textContent = "Click again to confirm";
+    b.classList.add("danger-armed");
+    resetTimer = setTimeout(disarm, 4000);
+    return;
+  }
+  clearTimeout(resetTimer);
+  progress = {};
+  save();
+  disarm();
+  renderAll();
+  toast("Progress reset");
+  function disarm() { resetArmed = false; b.textContent = "Reset progress"; b.classList.remove("danger-armed"); }
+});
+
+fillFilters();
+renderAll();
+</script>
+
+</body></html>
